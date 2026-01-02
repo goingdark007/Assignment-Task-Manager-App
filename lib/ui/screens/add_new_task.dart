@@ -59,8 +59,8 @@ class _AddNewTaskState extends State<AddNewTask>{
                           validator: (String? value) {
                             if (value == null || value.isEmpty) {
                               return 'Please enter Task Name';
-                            } else if (value.trim().length < 3) {
-                              return 'First Name must be at least 3 characters long';
+                            } else if (value.trim().length < 2) {
+                              return 'Task title must be at least 3 characters long';
                             }
                             return null;
                           }

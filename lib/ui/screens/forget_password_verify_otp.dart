@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:of9_task_manager/ui/utils/pin_theme.dart';
@@ -57,12 +58,13 @@ class ForgetPasswordVerifyOtp extends StatelessWidget {
                   const SizedBox(height: 20),
 
                   RichText(
-                    text: const TextSpan(
+                    text: TextSpan(
 
                       text: 'Have an account?',
                       children: [
                         TextSpan(
                           text: 'Sign in',
+                          recognizer: TapGestureRecognizer()..onTap = () => Navigator.pushReplacementNamed(context,'/login'),
                           style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
                         )
                       ],

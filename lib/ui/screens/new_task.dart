@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:of9_task_manager/data/models/task_model.dart';
-import 'package:of9_task_manager/data/services/api_caller.dart';
-import 'package:of9_task_manager/ui/widgets/custom_snack_bar.dart';
+import 'package:of9_task_manager/providers/task_provider.dart';
+import 'package:of9_task_manager/ui/widgets/task_list_view.dart';
 import 'package:of9_task_manager/ui/widgets/tm_app_bar.dart';
+import 'package:provider/provider.dart';
 
-import '../../data/models/task_status_count_model.dart';
-import '../../data/utils/urls.dart';
-import '../widgets/task_card.dart';
+import '../../core/enums/api_state.dart';
 import '../widgets/task_count_status.dart';
 
 class NewTask extends StatefulWidget {
@@ -20,130 +18,77 @@ class NewTask extends StatefulWidget {
 
 class _NewTaskState extends State<NewTask>{
 
-  bool _getTaskStatusCountProress = false;
-  bool _getNewTaskProgress = false;
-  List<TaskStatusCountModel> _taskCountList = [];
-  List<TaskModel> _newTaskList = [];
 
-  Future<void> _getAllTaskCount() async {
-    setState(() {
-      _getTaskStatusCountProress = true;
-    });
-
-    final APIResponse response = await ApiCaller.getRequest(url: Urls.taskCountURl);
-
-    setState(() {
-      _getTaskStatusCountProress = false;
-    });
-
-    List<TaskStatusCountModel> countList = [];
-
-    if(response.isSuccess){
-
-      for(Map<String, dynamic> item in response.body['data']){
-        countList.add(TaskStatusCountModel.fromJson(item));
-      }
-      
-    } else {
-      if(!mounted) return;
-      showSnackBarMessage(context, response.errorMessage.toString());
-    }
-
-    _taskCountList = countList;
-  }
-
-  Future<void> _getAllNewTasks() async {
-
-    setState(() {
-      _getNewTaskProgress = true;
-    });
-
-    final APIResponse response = await ApiCaller.getRequest(url: Urls.newTaskURL);
-
-    setState(() {
-      _getNewTaskProgress = false;
-    });
-
-    List<TaskModel> taskList = [];
-
-    if(response.isSuccess){
-
-      for(Map<String, dynamic> item in response.body['data']){
-        taskList.add(TaskModel.fromJson(item));
-      }
-
-    } else {
-
-      if(!mounted) return;
-      showSnackBarMessage(context, response.errorMessage.toString());
-
-    }
-
-    _newTaskList = taskList;
+  Future<void> _loadData() async {
+    final TaskProvider taskProvider = Provider.of<TaskProvider>(context, listen: false);
+    Future.wait([
+      taskProvider.getAllTaskCount(),
+      taskProvider.getTasksByStatus(status: 'new')
+    ]);
 
   }
 
   @override
   void initState() {
     super.initState();
-    _getAllTaskCount();
-    _getAllNewTasks();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
   }
 
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: TMAppBar(),
-      body: Column(
-        crossAxisAlignment: .center,
-        children: [
-          const SizedBox(height: 15),
 
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
-            child: SizedBox(
-              height: 90,
-              child: Visibility(
-                visible: !_getTaskStatusCountProress,
-                replacement: Center(child: CircularProgressIndicator()),
-                child: ListView.separated(
-                    physics: NeverScrollableScrollPhysics(),
-                    scrollDirection: .horizontal,
-                    itemCount: _taskCountList.length,
-                    itemBuilder: (context, index) =>
-                        TaskCountStatus(
-                            title: _taskCountList[index].status,
-                            count: _taskCountList[index].count
-                        ),
-                    separatorBuilder: (context, index) => const SizedBox(width: 3)
+    return Scaffold(
+      appBar: const TMAppBar(),
+      body: Consumer(
+        builder: (context, TaskProvider taskProvider, child) {
+          return Column(
+            crossAxisAlignment: .center,
+            children: [
+              const SizedBox(height: 15),
+
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 8),
+                child: SizedBox(
+                  height: 90,
+                  child: Visibility(
+                    visible: taskProvider.taskCountState != ApiState.isLoading,
+                    replacement: Center(child: CircularProgressIndicator()),
+                    child: ListView.separated(
+                        physics: NeverScrollableScrollPhysics(),
+                        scrollDirection: .horizontal,
+                        itemCount: taskProvider.taskStatusCount.length,
+                        itemBuilder: (context, index) =>
+                            TaskCountStatus(
+                                title: taskProvider.taskStatusCount[index].status,
+                                count: taskProvider.taskStatusCount[index].count
+                            ),
+                        separatorBuilder: (context, index) => const SizedBox(width: 3)
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
 
-          Expanded(
-              child: Visibility(
-                visible: !_getNewTaskProgress,
-                child: ListView.separated(
-                    itemCount: _newTaskList.length,
-                    itemBuilder: (context, index) => TaskCard(
-                        taskModel: _newTaskList[index],
-                        refreshParent: () {
-                          _getAllNewTasks();
-                          _getAllTaskCount();
-                        },
-                        chipColor: Colors.blue
-                    ),
-                    separatorBuilder: (context, index) => const SizedBox(height: 4),
-                ),
+              Expanded(
+                  child: Visibility(
+                    visible: taskProvider.taskListState != ApiState.isLoading,
+                    replacement: const Center(child: CircularProgressIndicator()),
+                    child: TaskListView(
+                        taskList: taskProvider.newTasks,
+                        chipColor: Colors.blue,
+                        refreshParent: _loadData),
+                  )
+
               )
-          )
 
-        ],
+            ],
+          );
+        }
       ),
       floatingActionButton: FloatingActionButton(
-          onPressed: () => Navigator.pushReplacementNamed(context, '/add_new_task'),
+          onPressed: () => Navigator.pushNamed(context, '/add_new_task'),
           child: const Icon(Icons.add)
       ),
     );

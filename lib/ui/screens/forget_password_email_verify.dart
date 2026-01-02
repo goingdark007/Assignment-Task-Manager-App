@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:of9_task_manager/ui/widgets/screen_background.dart';
 
@@ -47,12 +48,13 @@ class ForgetPasswordEmailVerify extends StatelessWidget {
                   const SizedBox(height: 20),
 
                   RichText(
-                    text: const TextSpan(
+                    text: TextSpan(
 
-                      text: 'Have an account?',
+                      text: 'Have an account? ',
                       children: [
                         TextSpan(
                           text: 'Sign in',
+                          recognizer: TapGestureRecognizer()..onTap = () => Navigator.pop(context),
                           style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
                         )
                       ],

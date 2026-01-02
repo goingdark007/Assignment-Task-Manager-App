@@ -1,15 +1,19 @@
-
 import 'package:logger/logger.dart';
 import 'dart:convert';
-
 import 'package:http/http.dart';
+import 'package:of9_task_manager/data/services/token_source.dart';
 import 'package:of9_task_manager/ui/controller/auth_controller.dart';
-
 import '../../app.dart';
 
 class ApiCaller {
 
   static final Logger _logger = Logger();
+
+  static late TokenSource _tokenSource;
+
+  static void init({ required TokenSource tokenSource}){
+    _tokenSource = tokenSource;
+  }
 
 
   static Future<APIResponse> getRequest ({required String url}) async {
@@ -20,7 +24,7 @@ class ApiCaller {
       _logRequest(url);
 
       Response response = await get(uri, headers: {
-        'token' : AuthController.accessToken ?? ''
+        'token' : _tokenSource.accessToken ?? ''
       });
       _logResponse(url, response);
 
@@ -50,6 +54,7 @@ class ApiCaller {
 
   static Future<APIResponse> postRequest ({required String url, required Map<String, dynamic>? body}) async {
 
+
     try {
 
       _logRequest(url, body: body);
@@ -59,7 +64,7 @@ class ApiCaller {
       final headers = {
         "Accept": 'application/json',
         "Content-Type": 'application/json',
-        'token' : AuthController.accessToken ?? ''
+        'token' : _tokenSource.accessToken ?? ''
       };
 
       Response response = await post(

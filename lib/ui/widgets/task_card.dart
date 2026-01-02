@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:of9_task_manager/providers/task_card_provider.dart';
+import 'package:provider/provider.dart';
 
+import '../../core/enums/api_state.dart';
 import '../../data/models/task_model.dart';
-import '../../data/services/api_caller.dart';
-import '../../data/utils/urls.dart';
-import 'custom_snack_bar.dart';
 
 class TaskCard extends StatefulWidget {
 
@@ -24,82 +24,22 @@ class TaskCard extends StatefulWidget {
 
 class _TaskCardState extends State<TaskCard> {
 
-  bool _changeStatusInProgress = false;
-  bool _deleteLoading = false;
 
-  void showChangeStatusDialog(){
-    showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Change Status'),
-          content: Column(
-            mainAxisSize: .min,
-            children: [
-              ListTile(
-                onTap: () => changeStatus('New'),
-                title: const Text('New'),
-                trailing: widget.taskModel.status == 'New' ? Icon(Icons.check, color: Colors.green,) : null,
-              ),
-              ListTile(
-                onTap: () => changeStatus('Progress'),
-                title: const Text('Progress'),
-                trailing: widget.taskModel.status == 'Progress' ? Icon(Icons.check, color: Colors.green,) : null,
-              ),
-              ListTile(
-                onTap: () => changeStatus('Cancelled'),
-                title: const Text('Cancelled'),
-                trailing: widget.taskModel.status == 'Cancelled' ? Icon(Icons.check, color: Colors.green,) : null,
-              ),
-              ListTile(
-                onTap: () => changeStatus('Completed'),
-                title: const Text('Completed'),
-                trailing: widget.taskModel.status == 'Completed' ? Icon(Icons.check, color: Colors.green,) : null,
-              ),
-            ],
-          ),
-        )
-    );
-  }
+  void statusDialog () {
 
-  Future<void> changeStatus(String status) async {
-    setState(() {
-      _changeStatusInProgress = true;
-    });
-    final APIResponse response = await ApiCaller.getRequest(url: Urls.changeStatus(widget.taskModel.id, status));
-    setState(() {
-      _changeStatusInProgress = false;
-    });
-    if(response.isSuccess){
-      widget.refreshParent();
-      if(!mounted) return;
-      Navigator.pop(context);
-    } else {
-      if(!mounted) return;
-      showSnackBarMessage(context, response.errorMessage.toString());
-    }
+    final TaskCardProvider taskCardProvider = Provider.of<TaskCardProvider>(context, listen: false);
+
+    taskCardProvider.showChangeStatusDialog(context: context, taskModel: widget.taskModel, refreshParent: widget.refreshParent);
 
   }
+
+
 
   Future<void> deleteTask() async {
 
-    setState(() {
-      _deleteLoading = true;
-    });
+    final TaskCardProvider taskCardProvider = Provider.of<TaskCardProvider>(context, listen: false);
 
-    final APIResponse response = await ApiCaller.getRequest(url: Urls.deleteTaskURL(widget.taskModel.id));
-
-    setState(() {
-      _deleteLoading = false;
-    });
-
-    if(response.isSuccess){
-      widget.refreshParent();
-      if(!mounted) return;
-      showSnackBarMessage(context, 'Task Deleted Successfully');
-    } else {
-      if(!mounted) return;
-      showSnackBarMessage(context, response.errorMessage.toString());
-    }
+    await taskCardProvider.deleteTask(context: context, taskModel: widget.taskModel, refreshParent: widget.refreshParent);
 
   }
 
@@ -122,28 +62,32 @@ class _TaskCardState extends State<TaskCard> {
             children: [
               Text(widget.taskModel.description, style: Theme.of(context).textTheme.bodyMedium),
               Text('Date: ${widget.taskModel.createdData}', style: Theme.of(context).textTheme.bodySmall),
-              Row(
-                //mainAxisSize: .min,
-                children: [
-                  Chip(
-                    padding: EdgeInsets.symmetric(horizontal: 18),
-                    label: Text(widget.taskModel.status),
-                    labelStyle: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white),
-                    backgroundColor: widget.chipColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(25),
-                    ),
-                  ),
-                  const Spacer(),
-                  Visibility(
-                      visible: !_changeStatusInProgress,
-                      replacement: Center(child: CircularProgressIndicator()),
-                      child: IconButton(onPressed: showChangeStatusDialog, icon: Icon(Icons.edit_note_rounded, color: Colors.green,),)),
-                  Visibility(
-                      visible: !_deleteLoading,
-                      replacement: Center(child: CircularProgressIndicator()),
-                      child: IconButton(onPressed: deleteTask, icon: Icon(Icons.delete, color: Colors.red,),))
-                ],
+              Consumer(
+                builder: (context, TaskCardProvider taskCardProvider, child) {
+                  return Row(
+                    //mainAxisSize: .min,
+                    children: [
+                      Chip(
+                        padding: EdgeInsets.symmetric(horizontal: 18),
+                        label: Text(widget.taskModel.status),
+                        labelStyle: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white),
+                        backgroundColor: widget.chipColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                      ),
+                      const Spacer(),
+                      Visibility(
+                          visible: taskCardProvider.changeTaskStatusState != ApiState.isLoading,
+                          replacement: Center(child: CircularProgressIndicator()),
+                          child: IconButton(onPressed: statusDialog, icon: Icon(Icons.edit_note_rounded, color: Colors.green,),)),
+                      Visibility(
+                          visible: taskCardProvider.deleteTaskState != ApiState.isLoading,
+                          replacement: Center(child: CircularProgressIndicator()),
+                          child: IconButton(onPressed: deleteTask, icon: Icon(Icons.delete, color: Colors.red,),))
+                    ],
+                  );
+                }
               ),
 
             ],

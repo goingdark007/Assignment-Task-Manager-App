@@ -1,54 +1,47 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../controller/auth_controller.dart';
+import '../../providers/auth_provider.dart';
 
-class TMAppBar extends StatefulWidget implements PreferredSizeWidget {
+class TMAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   const TMAppBar({
     super.key,
   });
 
-  @override
-  State<TMAppBar> createState() => _TMAppBarState();
-
-  @override
-  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
-}
-
-class _TMAppBarState extends State<TMAppBar> {
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserData();
-  }
-
-  // Helper to ensure UI updates once data is loaded
-  Future<void> _loadUserData() async {
-    await AuthController.getUserData();
-    if (mounted) {
-      setState(() {});
-    }
-  }
-
-
+  // @override
   @override
   Widget build(BuildContext context) {
 
+    final authProvider = Provider.of<AuthProvider>(context, listen: true);
+    final userModel = authProvider.userModel;
+    final profilePhoto = userModel?.photo;
+
     return AppBar(
+      automaticallyImplyLeading: false,
       title: InkWell(
         onTap: () => Navigator.pushNamed(context, '/update_profile'),
         child: Row(
           mainAxisAlignment: .start,
           children: [
-            CircleAvatar(backgroundColor: Colors.lightGreen.shade300),
+            CircleAvatar(
+                backgroundImage: profilePhoto != null && profilePhoto.isNotEmpty ? MemoryImage(
+                  Uint8List.fromList(
+                    List<int>.from(jsonDecode(profilePhoto)),
+                  ),
+                ) : null,
+                child: profilePhoto != null ? Icon(Icons.person) : null
+            ),
             const SizedBox(width: 8),
             Column(
               crossAxisAlignment: .start,
               mainAxisSize: .min,
               children: [
-                Text(AuthController.userModel?.email ?? 'Loading', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.white)),
-                Text(AuthController.userModel?.mobile ?? 'Loading', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white))
+                Text('${userModel?.firstName ?? 'Loading'} ${userModel?.lastName ?? ' '}', style: Theme.of(context).textTheme.titleSmall?.copyWith(color: Colors.white)),
+                Text(userModel?.email ?? 'Loading', style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.white))
               ],
             ),
           ],
@@ -56,7 +49,7 @@ class _TMAppBarState extends State<TMAppBar> {
       ),
       actions: [
         IconButton(onPressed: () async {
-          await AuthController.clearUserData();
+          await authProvider.clearUserData();
           if (!context.mounted) return;
           Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
         },
@@ -66,4 +59,7 @@ class _TMAppBarState extends State<TMAppBar> {
       backgroundColor: Colors.lightGreen,
     );
   }
+
+  @override
+  Size get preferredSize => const Size.fromHeight(kToolbarHeight);
 }
