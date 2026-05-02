@@ -20,7 +20,7 @@ class UserModel {
       firstName: json['firstName'],
       lastName: json['lastName'],
       mobile: json['mobile'],
-      photo: json['photo'],
+      photo: json['photo'] ?? '',
     );
   }
 

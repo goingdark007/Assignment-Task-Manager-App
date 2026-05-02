@@ -19,6 +19,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+  bool isObsecure = true;
 
   Future<void> signIn() async {
 
@@ -128,8 +129,16 @@ class _LoginPageState extends State<LoginPage> {
 
                     TextFormField(
                       controller: _passwordController,
-                      decoration: const InputDecoration(
-                        hintText: 'Password'
+                      obscureText: isObsecure,
+                      decoration: InputDecoration(
+                        hintText: 'Password',
+                        suffixIcon: IconButton(onPressed: () {
+                          setState(() {
+                            isObsecure = !isObsecure;
+                          });
+                        },
+                            icon: isObsecure ? Icon(Icons.visibility_off, color: Colors.lightGreen,) : Icon(Icons.visibility, color: Colors.redAccent,)
+                        ),
                       ),
                         validator:  (String? value) {
                           if (value == null || value.isEmpty) {
