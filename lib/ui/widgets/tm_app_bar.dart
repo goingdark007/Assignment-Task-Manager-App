@@ -23,7 +23,11 @@ class TMAppBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       automaticallyImplyLeading: false,
       title: InkWell(
-        onTap: () => Navigator.pushNamed(context, '/update_profile'),
+        onTap: () {
+          final String? routeName = ModalRoute.of(context)?.settings.name;
+          if (routeName == '/update_profile') return; // checking if already on update profile screen
+          Navigator.pushNamed(context, '/update_profile');
+          },
         child: Row(
           mainAxisAlignment: .start,
           children: [
