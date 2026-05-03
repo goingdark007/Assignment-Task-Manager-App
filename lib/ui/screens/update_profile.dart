@@ -50,11 +50,11 @@ class _UpdateProfileState extends State<UpdateProfile>{
       );
       await authProvider.updateUserData(user);
       if(!mounted) return;
-      showSnackBarMessage(context, 'Profile Updated Successfully');
+      showSnackBarMessage(context: context, message: 'Profile Updated Successfully');
       Navigator.pushReplacementNamed(context, '/bottom_nav');
     } else {
       if(!mounted) return;
-      showSnackBarMessage(context, networkProvider.errorMessage ?? 'Profile Update Failed');
+      showSnackBarMessage(context: context, message: networkProvider.errorMessage ?? 'Profile Update Failed');
     }
 
   }

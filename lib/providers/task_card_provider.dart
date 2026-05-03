@@ -94,13 +94,13 @@ class TaskCardProvider extends ChangeNotifier{
       refreshParent();
       notifyListeners();
       if(!context.mounted) return;
-      showSnackBarMessage(context, 'Task Deleted Successfully');
+      showSnackBarMessage(context: context, message: 'Task Deleted Successfully');
     } else {
       _deleteTaskState = ApiState.error;
       _errorMessage = response.errorMessage;
       notifyListeners();
       if(!context.mounted) return;
-      showSnackBarMessage(context, response.errorMessage.toString());
+      showSnackBarMessage(context: context, message: response.errorMessage.toString());
     }
 
   }

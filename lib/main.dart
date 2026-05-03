@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:of9_task_manager/providers/auth_provider.dart';
 import 'package:of9_task_manager/providers/network_provider.dart';
+import 'package:of9_task_manager/providers/reset_password_provider.dart';
 import 'package:of9_task_manager/providers/task_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -18,6 +19,7 @@ void main() {
         ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
         ChangeNotifierProvider(create: (_) => NetworkProvider()),
         ChangeNotifierProvider(create: (_) => TaskProvider()),
+        ChangeNotifierProvider(create: (_) => ResetPasswordProvider())
       ],
       child: const TaskManagerApp(),
     )
