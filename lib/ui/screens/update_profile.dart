@@ -38,7 +38,8 @@ class _UpdateProfileState extends State<UpdateProfile>{
         firstName: _firstNameController.text,
         lastName: _lastNameController.text,
         mobile: _mobileController.text,
-        password: _passwordController.text);
+        password: _passwordController.text
+    );
 
     if (result != null) {
       UserModel user = UserModel(
@@ -54,7 +55,7 @@ class _UpdateProfileState extends State<UpdateProfile>{
       Navigator.pushReplacementNamed(context, '/bottom_nav');
     } else {
       if(!mounted) return;
-      showSnackBarMessage(context: context, message: networkProvider.errorMessage ?? 'Profile Update Failed');
+      showSnackBarMessage(context: context, message: networkProvider.errorMessage ?? 'Profile Update Failed', backgroundColor: Colors.redAccent);
     }
 
   }
@@ -63,7 +64,7 @@ class _UpdateProfileState extends State<UpdateProfile>{
   void initState() {
     super.initState();
     final AuthProvider authProvider = Provider.of<AuthProvider>(context, listen: false);
-    UserModel? user = authProvider.userModel;
+    final UserModel? user = authProvider.userModel;
     _emailController = TextEditingController(text: user?.email ?? '');
     _firstNameController = TextEditingController(text: user?.firstName ?? '');
     _lastNameController = TextEditingController(text: user?.lastName ?? '');
