@@ -106,7 +106,10 @@ class _AddNewTaskState extends State<AddNewTask>{
                               return 'First Name must be at least 3 characters long';
                             }
                             return null;
-                          }
+                          },
+                        onTapOutside: (event){
+                          FocusScope.of(context).unfocus();
+                        },
                       ),
                       const SizedBox(height: 20),
                       Consumer(
