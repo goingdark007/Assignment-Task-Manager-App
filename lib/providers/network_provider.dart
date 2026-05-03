@@ -148,8 +148,8 @@ class NetworkProvider extends ChangeNotifier {
 
     Map<String, dynamic> requestBody = {
       'email': email,
-      'first_name': firstName,
-      'last_name': lastName,
+      'firstName': firstName,
+      'lastName': lastName,
       'mobile':mobile,
     };
 
