@@ -1,15 +1,20 @@
-
+import 'package:flutter/cupertino.dart';
 import 'package:logger/logger.dart';
 import 'dart:convert';
-
 import 'package:http/http.dart';
+import 'package:of9_task_manager/data/services/token_source.dart';
 import 'package:of9_task_manager/ui/controller/auth_controller.dart';
-
 import '../../app.dart';
 
 class ApiCaller {
 
   static final Logger _logger = Logger();
+
+  static late TokenSource _tokenSource;
+
+  static void init({ required TokenSource tokenSource}){
+    _tokenSource = tokenSource;
+  }
 
 
   static Future<APIResponse> getRequest ({required String url}) async {
@@ -19,25 +24,27 @@ class ApiCaller {
       Uri uri = Uri.parse(url);
       _logRequest(url);
 
-      Response response = await get(uri, headers: {
-        'token' : AuthController.accessToken ?? ''
-      });
+      final Response response = await get(uri, headers: {
+        'Content-Type': 'application/json',
+        'token' : _tokenSource.accessToken ?? ''
+      }).timeout(const Duration(seconds: 15)); // Set a timeout for the request
+
       _logResponse(url, response);
 
       final int statusCode = response.statusCode;
-
+      final decodedData = _safeDecode(response.body);
       if (statusCode == 200) {
-        final decodedData = jsonDecode(response.body);
+
         return APIResponse(
             body: decodedData, responseCode: statusCode, isSuccess: true
         );
       } else if (response.statusCode == 401){
         await moveToLogin();
         return APIResponse(
-            body: jsonDecode(response.body), responseCode: statusCode, isSuccess: false, errorMessage: 'Unauthorized'
+            body: decodedData, responseCode: statusCode, isSuccess: false, errorMessage: 'Unauthorized'
         );
       } else {
-        final decodedData = jsonDecode(response.body);
+        debugPrint('Error response body: $statusCode\n body => ${response.body}'); // Log the error response body for debugging
         return APIResponse(
             body: decodedData, responseCode: statusCode, isSuccess: false
         );
@@ -59,31 +66,30 @@ class ApiCaller {
       final headers = {
         "Accept": 'application/json',
         "Content-Type": 'application/json',
-        'token' : AuthController.accessToken ?? ''
+        'token' : _tokenSource.accessToken ?? ''
       };
 
-      Response response = await post(
+      final Response response = await post(
           uri,
           headers: headers,
           body: body != null ? jsonEncode(body) : null
-      );
+      ).timeout(const Duration(seconds: 15)); // Set a timeout for the request
 
       _logResponse(url, response);
 
       final int statusCode = response.statusCode;
-
+      final decodedData = _safeDecode(response.body);
       if (statusCode == 200 || statusCode == 201) {
-        final decodedData = jsonDecode(response.body);
+
         return APIResponse(
             body: decodedData, responseCode: statusCode, isSuccess: true
         );
       } else if (response.statusCode == 401){
         await moveToLogin();
         return APIResponse(
-            body: jsonDecode(response.body), responseCode: statusCode, isSuccess: false, errorMessage: 'Unauthorized'
+            body: decodedData, responseCode: statusCode, isSuccess: false, errorMessage: 'Unauthorized'
         );
       } else {
-        final decodedData = jsonDecode(response.body);
         return APIResponse(
             body: decodedData, responseCode: statusCode, isSuccess: false
         );
@@ -103,9 +109,12 @@ class ApiCaller {
 
   static void _logResponse(String url, Response response) {
 
-    final decodedData = jsonDecode(response.body);
+    final decodedData = _safeDecode(response.body);
 
-    final prettyJson = const JsonEncoder.withIndent(' ').convert(decodedData);
+    final prettyJson = decodedData is String
+        ? decodedData
+        : const JsonEncoder.withIndent('  ').convert(decodedData);
+
 
     _logger.i(
       'URL1 => $url\n'
@@ -115,10 +124,20 @@ class ApiCaller {
     );
   }
 
+  /// Safely JSON decoding
+  static dynamic _safeDecode(String body) {
+    try {
+      return jsonDecode(body);
+    } catch (_) {
+      return body; // fallback (plain text / HTML)
+    }
+  }
+
   static Future<void> moveToLogin () async {
     await AuthController.clearUserData();
     TaskManagerApp.navigatorKey.currentState?.pushNamedAndRemoveUntil('/login', (route) => false);
   }
+
 
 }
 

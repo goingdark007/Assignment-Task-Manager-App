@@ -1,11 +1,10 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:of9_task_manager/providers/network_provider.dart';
 import 'package:of9_task_manager/ui/widgets/screen_background.dart';
-
-import '../../data/models/user_model.dart';
-import '../../data/services/api_caller.dart';
-import '../../data/utils/urls.dart';
-import '../controller/auth_controller.dart';
+import 'package:provider/provider.dart';
+import '../../core/enums/api_state.dart';
+import '../../providers/auth_provider.dart';
 
 class LoginPage extends StatefulWidget {
 
@@ -20,47 +19,36 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-
-  bool signInProgress = false;
+  bool isObsecure = true;
 
   Future<void> signIn() async {
-    setState(() {
-      signInProgress = true;
-    });
-    Map<String, dynamic> requestBody = {
-      'email': _emailController.text,
-      'password': _passwordController.text
-    };
 
-    final APIResponse response = await ApiCaller.postRequest(url: Urls.loginURl, body: requestBody);
+    final NetworkProvider networkProvider = Provider.of<NetworkProvider>(context, listen: false);
+    final AuthProvider authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-    setState(() {
-      signInProgress = false;
-    });
+    final result = await networkProvider.login(email: _emailController.text, password: _passwordController.text);
 
-    if(response.isSuccess){
-      final UserModel model = UserModel.fromJson(response.body['data']);
-      final String accessToken = response.body['token'];
-      await AuthController.saveUserData(model, accessToken);
+    if (result != null) {
+      await authProvider.saveUserData(result['user'], result['token']);
       clearController();
       if(!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Log in Success'),
-            duration: Duration(seconds: 5),
-            backgroundColor: Colors.lightGreen,
-          ),
+        const SnackBar(
+          content: Text('Log in Success'),
+          duration: Duration(seconds: 5),
+          backgroundColor: Colors.lightGreen,
+        ),
       );
       Navigator.pushReplacementNamed(context, '/bottom_nav');
-
     } else {
       if(!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.body['data']),
+          SnackBar(content: Text(networkProvider.errorMessage ?? 'Log in Failed'),
             duration: Duration(seconds: 5),
             backgroundColor: Colors.red,
           )
       );
+
     }
 
   }
@@ -125,7 +113,7 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                         validator: (String? value) {
 
-                          final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                          final emailRegex = RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$');
 
                           if (value == null || value.isEmpty) {
                             return 'Please enter your email';
@@ -141,8 +129,16 @@ class _LoginPageState extends State<LoginPage> {
 
                     TextFormField(
                       controller: _passwordController,
-                      decoration: const InputDecoration(
-                        hintText: 'Password'
+                      obscureText: isObsecure,
+                      decoration: InputDecoration(
+                        hintText: 'Password',
+                        suffixIcon: IconButton(onPressed: () {
+                          setState(() {
+                            isObsecure = !isObsecure;
+                          });
+                        },
+                            icon: isObsecure ? Icon(Icons.visibility_off, color: Colors.lightGreen,) : Icon(Icons.visibility, color: Colors.redAccent,)
+                        ),
                       ),
                         validator:  (String? value) {
                           if (value == null || value.isEmpty) {
@@ -156,24 +152,28 @@ class _LoginPageState extends State<LoginPage> {
 
                     const SizedBox(height: 20),
 
-                    Visibility(
-                      visible: !signInProgress,
-                      replacement: Center(child: CircularProgressIndicator()),
-                      child: FilledButton(
-                        onPressed: () {
-                          if (_formKey.currentState!.validate()) {
-                            signIn();
-                          }
-                        },
-                        child: const Icon(Icons.arrow_circle_right_outlined, size: 30)
-                      ),
+                    Consumer(
+                      builder: (context, NetworkProvider networkProvider, child) {
+                        return Visibility(
+                          visible: networkProvider.loginState != ApiState.isLoading,
+                          replacement: const Center(child: CircularProgressIndicator()),
+                          child: FilledButton(
+                            onPressed: () {
+                              if (_formKey.currentState!.validate()) {
+                                signIn();
+                              }
+                            },
+                            child: const Icon(Icons.arrow_circle_right_outlined, size: 30)
+                          ),
+                        );
+                      }
                     ),
                     const SizedBox(height: 35),
                     TextButton( onPressed: _forgetPassword, child: const Text('Forget Password?', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.lightGreen, fontSize: 16))),
                     RichText(
                       text: TextSpan(
 
-                        text: 'Don\'t have an account?',
+                        text: 'Don\'t have an account? ',
                         children: [
                           TextSpan(
                             text: 'Sign Up',

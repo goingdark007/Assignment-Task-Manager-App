@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:of9_task_manager/ui/widgets/task_card.dart';
+import 'package:of9_task_manager/ui/widgets/task_list_view.dart';
 import 'package:of9_task_manager/ui/widgets/tm_app_bar.dart';
+import 'package:provider/provider.dart';
 
-import '../../data/models/task_model.dart';
-import '../../data/services/api_caller.dart';
-import '../../data/utils/urls.dart';
-import '../widgets/custom_snack_bar.dart';
+import '../../core/enums/api_state.dart';
+import '../../providers/task_provider.dart';
 
 class CompletedTask extends StatefulWidget{
 
@@ -17,67 +16,42 @@ class CompletedTask extends StatefulWidget{
 
 class _CompletedTaskState extends State<CompletedTask>{
 
-  bool _getCompletedTaskProgress = false;
-  List<TaskModel> _completedTaskList = [];
 
-  Future<void> _getAllTasks() async {
+  Future<void> _loadData() async {
 
-    setState(() {
-      _getCompletedTaskProgress = true;
-    });
-
-    final APIResponse response = await ApiCaller.getRequest(url: Urls.completedTaskURL);
-
-    setState(() {
-      _getCompletedTaskProgress = false;
-    });
-
-    List<TaskModel> taskList = [];
-
-    if(response.isSuccess){
-
-      for(Map<String, dynamic> item in response.body['data']){
-        taskList.add(TaskModel.fromJson(item));
-      }
-
-    } else {
-
-      if(!mounted) return;
-      showSnackBarMessage(context, response.errorMessage.toString());
-
-    }
-
-    _completedTaskList = taskList;
+    final TaskProvider taskProvider = Provider.of<TaskProvider>(context, listen: false);
+    Future.wait([
+      taskProvider.getTasksByStatus(status: 'completed')
+    ]);
 
   }
 
   @override
   void initState(){
     super.initState();
-    _getAllTasks();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: TMAppBar(),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
-        child: Visibility(
-          visible: !_getCompletedTaskProgress,
-          replacement: Center(child: CircularProgressIndicator()),
-          child: ListView.separated(
-              itemCount: _completedTaskList.length,
-              itemBuilder: (context, index) =>
-                TaskCard(
-                    taskModel: _completedTaskList[index],
-                    refreshParent: (){
-                      _getAllTasks();
-                    },
-                    chipColor: Colors.green),
-              separatorBuilder: (context, index) => SizedBox(height: 5)
-              ),
-        ),
+      body: Consumer(
+        builder: (context, TaskProvider taskProvider, child) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Visibility(
+              visible: taskProvider.taskListState != ApiState.isLoading,
+              replacement: Center(child: CircularProgressIndicator()),
+              child: TaskListView(
+                  taskList: taskProvider.completedTasks,
+                  chipColor: Colors.lightGreen,
+                  refreshParent: _loadData)
+            ),
+          );
+        }
       )
     );
   }

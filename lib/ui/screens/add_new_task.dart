@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:of9_task_manager/providers/network_provider.dart';
 import 'package:of9_task_manager/ui/widgets/screen_background.dart';
 import 'package:of9_task_manager/ui/widgets/tm_app_bar.dart';
-
-import '../../data/services/api_caller.dart';
-import '../../data/utils/urls.dart';
+import 'package:provider/provider.dart';
+import '../../core/enums/api_state.dart';
 
 class AddNewTask extends StatefulWidget{
   const AddNewTask ({super.key});
@@ -17,6 +17,33 @@ class _AddNewTaskState extends State<AddNewTask>{
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  Future<void> _addNewTask () async {
+    final NetworkProvider networkProvider = Provider.of<NetworkProvider>(context, listen: false);
+    final result = await networkProvider.addTask(title: _titleController.text, description: _descriptionController.text);
+
+    if (result != null){
+      clearController();
+      if(!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('New Task Added'),
+            duration: Duration(seconds: 5),
+            backgroundColor: Colors.lightGreen,
+          )
+      );
+      Navigator.pushReplacementNamed(context, '/bottom_nav');
+    } else {
+      if(!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(networkProvider.errorMessage ?? 'Failed to add new task'),
+            duration: Duration(seconds: 5),
+            backgroundColor: Colors.red,
+          ));
+    }
+
+  }
 
   void clearController () {
     _titleController.clear();
@@ -59,8 +86,8 @@ class _AddNewTaskState extends State<AddNewTask>{
                           validator: (String? value) {
                             if (value == null || value.isEmpty) {
                               return 'Please enter Task Name';
-                            } else if (value.trim().length < 3) {
-                              return 'First Name must be at least 3 characters long';
+                            } else if (value.trim().length < 2) {
+                              return 'Task title must be at least 3 characters long';
                             }
                             return null;
                           }
@@ -79,20 +106,27 @@ class _AddNewTaskState extends State<AddNewTask>{
                               return 'First Name must be at least 3 characters long';
                             }
                             return null;
-                          }
+                          },
+                        onTapOutside: (event){
+                          FocusScope.of(context).unfocus();
+                        },
                       ),
                       const SizedBox(height: 20),
-                      Visibility(
-                        visible: !_addTaskProgress,
-                        replacement: Center(child: CircularProgressIndicator()),
-                        child: FilledButton(
-                          onPressed: () {
-                            if(_formKey.currentState!.validate()) {
-                              addTask();
-                            }
-                          },
-                          child: const Icon(Icons.arrow_circle_right_outlined),
-                        ),
+                      Consumer(
+                        builder: (context, NetworkProvider networkProvider, child) {
+                          return Visibility(
+                            visible: networkProvider.addNewTaskState != ApiState.isLoading,
+                            replacement: Center(child: CircularProgressIndicator()),
+                            child: FilledButton(
+                              onPressed: () {
+                                if(_formKey.currentState!.validate()) {
+                                  _addNewTask();
+                                }
+                              },
+                              child: const Icon(Icons.arrow_circle_right_outlined),
+                            ),
+                          );
+                        }
                       )
                   
                     ],
@@ -104,49 +138,5 @@ class _AddNewTaskState extends State<AddNewTask>{
       );
 
     }
-
-    bool _addTaskProgress = false;
-
-  Future<void> addTask() async {
-    setState(() {
-      _addTaskProgress = true;
-    });
-
-    Map<String, dynamic> requestBody = {
-      'title': _titleController.text,
-      'description': _descriptionController.text,
-      "status" : "New"
-    };
-
-    final APIResponse response = await ApiCaller.postRequest(url: Urls.createTaskURl, body: requestBody);
-
-    setState(() {
-      _addTaskProgress = false;
-    });
-
-    if(response.isSuccess){
-      clearController();
-      if(!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('New Task Added'),
-            duration: Duration(seconds: 5),
-            backgroundColor: Colors.lightGreen,
-          )
-      );
-      Navigator.pushReplacementNamed(context, '/bottom_nav');
-    } else {
-      if(!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response.errorMessage ?? response.body['data']),
-            duration: Duration(seconds: 5),
-            backgroundColor: Colors.red,
-          ));
-      }
-
-
-  }
-
 
 }

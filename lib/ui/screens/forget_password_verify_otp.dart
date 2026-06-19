@@ -1,13 +1,38 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:of9_task_manager/core/enums/api_state.dart';
+import 'package:of9_task_manager/providers/reset_password_provider.dart';
 import 'package:of9_task_manager/ui/utils/pin_theme.dart';
+import 'package:of9_task_manager/ui/widgets/custom_snack_bar.dart';
 import 'package:pinput/pinput.dart';
+import 'package:provider/provider.dart';
 
 import '../widgets/screen_background.dart';
 
-class ForgetPasswordVerifyOtp extends StatelessWidget {
+class ForgetPasswordVerifyOtp extends StatefulWidget {
 
   const ForgetPasswordVerifyOtp({super.key});
+
+  @override
+  State<ForgetPasswordVerifyOtp> createState() => _ForgetPasswordVerifyOtpState();
+}
+
+class _ForgetPasswordVerifyOtpState extends State<ForgetPasswordVerifyOtp> {
+
+  late final TextEditingController _otpController;
+
+  @override
+  void initState() {
+    super.initState();
+    _otpController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _otpController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context){
@@ -35,6 +60,7 @@ class ForgetPasswordVerifyOtp extends StatelessWidget {
                   const SizedBox(height: 4),
 
                   Pinput(
+                    controller: _otpController,
                     length: 6,
                     //autofocus: true
                     inputFormatters: [
@@ -50,19 +76,43 @@ class ForgetPasswordVerifyOtp extends StatelessWidget {
                   ),
 
                   const SizedBox(height: 20),
-                  FilledButton(
-                      onPressed: () => Navigator.pushReplacementNamed(context, '/reset_password'),
-                      child:const Icon(Icons.arrow_circle_right_outlined)
+                  Consumer<ResetPasswordProvider>(
+                    builder: (context, provider, _) {
+
+                      if(provider.verifyOtpState == ApiState.isLoading) return const Center(child: CircularProgressIndicator());
+
+                      return FilledButton(
+                          onPressed: () async {
+                            final String email = ModalRoute.of(context)?.settings.arguments as String? ?? '';
+                            final bool isSuccess = await provider.verifyOtp(email: email, otp: _otpController.text.trim());
+                            if(!context.mounted) return;
+                            if(isSuccess) {
+                              Navigator.pushReplacementNamed(
+                                  context, '/reset_password',
+                                  arguments: {
+                                    'email': email,
+                                    'OTP': _otpController.text.trim()
+                                  }
+                              );
+                              showSnackBarMessage(context: context, message: 'OTP verified successfully',  backgroundColor: Colors.green);
+                            } else {
+                              showSnackBarMessage(context: context, message: provider.errorMessage ?? 'Failed to verify OTP', backgroundColor: Colors.redAccent);
+                            }
+                            },
+                          child:const Icon(Icons.arrow_circle_right_outlined)
+                      );
+                    }
                   ),
                   const SizedBox(height: 20),
 
                   RichText(
-                    text: const TextSpan(
+                    text: TextSpan(
 
                       text: 'Have an account?',
                       children: [
                         TextSpan(
                           text: 'Sign in',
+                          recognizer: TapGestureRecognizer()..onTap = () => Navigator.pushReplacementNamed(context,'/login'),
                           style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
                         )
                       ],
@@ -81,5 +131,4 @@ class ForgetPasswordVerifyOtp extends StatelessWidget {
 
     );
   }
-
 }

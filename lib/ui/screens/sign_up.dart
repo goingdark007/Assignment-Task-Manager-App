@@ -1,7 +1,8 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:of9_task_manager/data/utils/urls.dart';
+import 'package:of9_task_manager/providers/network_provider.dart';
+import 'package:provider/provider.dart';
 
-import '../../data/services/api_caller.dart';
 import '../widgets/screen_background.dart';
 
 class SignUp extends StatefulWidget{
@@ -23,38 +24,32 @@ class _SignUpState extends State<SignUp> {
   bool signUpInProgress = false;
 
   Future<void> signUp() async {
-    setState(() {
-      signUpInProgress = true;
-    });
 
-    Map<String, dynamic> requestBody = {
-      'email': _emailController.text,
-      'first_name': _firstNameController.text,
-      'last_name': _lastNameController.text,
-      'mobile': _mobileController.text,
-      'password': _passwordController.text
-    };
+    final NetworkProvider networkProvider = Provider.of<NetworkProvider>(context, listen: false);
 
-    final APIResponse response = await ApiCaller.postRequest(url: Urls.registrationURl, body: requestBody);
+    final result = await networkProvider.register(
+        email: _emailController.text,
+        password: _passwordController.text,
+        firstName: _firstNameController.text,
+        lastName: _lastNameController.text,
+        mobile: _mobileController.text
+    );
 
-    setState(() {
-      signUpInProgress = false;
-    });
-
-    if(response.isSuccess){
+    if (result != null) {
       clearController();
       if(!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-              content: Text('Sign Up Success'),
-              duration: Duration(seconds: 5),
-              backgroundColor: Colors.lightGreen,
-          )
+        const SnackBar(
+          content: Text('Sign Up Success'),
+          duration: Duration(seconds: 5),
+          backgroundColor: Colors.lightGreen,
+        )
       );
+      Navigator.pop(context);
     } else {
       if(!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.body['data']),
+          SnackBar(content: Text(networkProvider.errorMessage ?? 'Sign Up Failed'),
           duration: Duration(seconds: 5),
           backgroundColor: Colors.red,
         )
@@ -111,7 +106,7 @@ class _SignUpState extends State<SignUp> {
                         ),
                         validator: (String? value) {
 
-                          final emailRegex = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                          final emailRegex = RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$');
 
                           if (value == null || value.isEmpty) {
                             return 'Please enter your email';
@@ -163,7 +158,6 @@ class _SignUpState extends State<SignUp> {
                             } else if (value.trim().length != 11) {
                               return 'Mobile Number must be 11 digits long';
                             }
-
                             return null;
                           }
                       ),
@@ -199,12 +193,13 @@ class _SignUpState extends State<SignUp> {
                       const SizedBox(height: 20),
 
                       RichText(
-                        text: const TextSpan(
+                        text: TextSpan(
 
                           text: 'Have an account?',
                           children: [
                             TextSpan(
                               text: 'Sign in',
+                              recognizer: TapGestureRecognizer()..onTap = () => Navigator.pop(context),
                               style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold),
                             )
                           ],

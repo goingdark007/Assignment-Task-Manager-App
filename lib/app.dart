@@ -8,7 +8,6 @@ import 'package:of9_task_manager/ui/screens/reset_password.dart';
 import 'package:of9_task_manager/ui/screens/sign_up.dart';
 import 'package:of9_task_manager/ui/screens/splash_screen.dart';
 import 'package:of9_task_manager/ui/screens/update_profile.dart';
-//import 'package:of9_task_manager/ui/screens/splash_screen.dart';
 
 class TaskManagerApp extends StatelessWidget {
   const TaskManagerApp({super.key});
@@ -20,6 +19,7 @@ class TaskManagerApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: ' Task Manager',
+      //navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorSchemeSeed: Colors.lightGreen,
@@ -76,7 +76,6 @@ class TaskManagerApp extends StatelessWidget {
         scaffoldBackgroundColor: Colors.grey.shade200,
 
       ),
-      //home: const SplashScreen(),
       initialRoute: '/splash_screen',
       routes: {
         '/splash_screen': (context) => const SplashScreen(),
