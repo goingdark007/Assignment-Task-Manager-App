@@ -1,7 +1,5 @@
 # Task Manager App (MVVM)
 
-![Task Manager App Banner](https://via.placeholder.com/800x400?text=Task+Manager+App+Thumbnail) <!-- Replace with your actual project image/thumbnail -->
-
 Task Manager App is a full-stack Flutter-based productivity application focused on scalable architecture, secure authentication, backend integration, and efficient state management. Built using REST APIs and Provider, this project demonstrates production-level Flutter development, API communication, authentication workflows, and clean app architecture following modern development standards.
 
 ## 🚀 Key Features
@@ -15,6 +13,9 @@ Task Manager App is a full-stack Flutter-based productivity application focused 
 *   **Central API Calling Service** – Designed a reusable centralized API service to improve code maintainability and scalability.
 *   **Modern Architecture** – Followed MVVM (Model-View-ViewModel) architecture with proper separation of concerns.
 *   **State Management** – Used Provider for reactive and efficient application-wide state management.
+
+## 📸 Screenshot
+<img width="1200" height="627" alt="to_do_linkedin" src="https://github.com/user-attachments/assets/3dbb6f7f-1f62-4080-9696-019bd35064b7" />
 
 ## 🛠️ Tech Stack
 
@@ -53,12 +54,6 @@ The project follows a clean directory structure to maintain separation of concer
     ```bash
     flutter run
     ```
-
-## 📸 Screenshots
-
-| Login Screen | Task Dashboard | Profile Update |
-| :---: | :---: | :---: |
-| ![Login](https://via.placeholder.com/200x400?text=Login+Screen) | ![Dashboard](https://via.placeholder.com/200x400?text=Dashboard) | ![Profile](https://via.placeholder.com/200x400?text=Profile) |
 
 ---
 *This project was developed to strengthen understanding of scalable Flutter architecture and real-world API-driven application development.*
